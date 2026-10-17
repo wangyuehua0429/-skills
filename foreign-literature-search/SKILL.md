@@ -97,7 +97,7 @@ AND SUBJAREA(SOCI OR PSYC OR ECON OR BUSI)
 ## Step 1: 执行主体联合检索
 
 ```bash
-python3 /Users/songyiping/.claude/skills/foreign-literature-search/scripts/openalex_search.py \
+~/py-tools/bin/python ~/skills-src/yipng-academic-skills/foreign-literature-search/scripts/openalex_search.py \
   --keywords "gig economy + platform labor + ride-hailing + Uber driver" \
   --keywords "meaning of work + work meaning + occupational identity + livelihood" \
   --max-results 100 \
@@ -147,7 +147,7 @@ python3 /Users/songyiping/.claude/skills/foreign-literature-search/scripts/opena
 
 **补充检索 A：研究对象背景文献**
 ```bash
-python3 /Users/songyiping/.claude/skills/foreign-literature-search/scripts/openalex_search.py \
+~/py-tools/bin/python ~/skills-src/yipng-academic-skills/foreign-literature-search/scripts/openalex_search.py \
   --keywords "precarious work + informal work + gig worker + platform worker" \
   --keywords "labor market + working conditions + employment + job quality" \
   --max-results 60 \
@@ -159,7 +159,7 @@ python3 /Users/songyiping/.claude/skills/foreign-literature-search/scripts/opena
 
 **补充检索 B：核心理论文献**
 ```bash
-python3 /Users/songyiping/.claude/skills/foreign-literature-search/scripts/openalex_search.py \
+~/py-tools/bin/python ~/skills-src/yipng-academic-skills/foreign-literature-search/scripts/openalex_search.py \
   --keywords "identity work + sensemaking + meaning-making + self-concept" \
   --keywords "labor + work + occupation + employment" \
   --max-results 60 \
