@@ -1,7 +1,7 @@
 ---
 name: foreign-literature-search
 description: >
-  外文学术文献检索工具（社会科学方向）。基于 OpenAlex 开放 API（无需机构账号、无需 API key），
+  外文学术文献检索工具（社会科学方向）。基于 OpenAlex 开放 API（匿名可做基础查询，游标翻页需要免费 API key），
   执行三阶段检索：①主体联合检索（最具体组主检索+其他组后置文本过滤，实现真正 AND 语义）
   ②独立补充检索（研究对象背景文献 + 核心理论文献）③汇总去重分类 Excel。
   同步生成 WoS/Scopus 布尔检索式供有机构权限的用户使用。
@@ -12,15 +12,16 @@ description: >
 # 外文学术文献检索工具（OpenAlex 主力版）
 
 调用 Python 脚本（`scripts/openalex_search.py`）通过 **OpenAlex 开放 API** 执行全自动检索，
-无需机构账号、无需 API key、无需浏览器。
+无需机构账号和浏览器。匿名请求可读取第一页；继续游标翻页前，通过
+`OPENALEX_API_KEY` 环境变量提供免费 API key。
 
 ## 依赖安装
 
 ```bash
-pip install openpyxl
+uv pip install --python ~/py-tools/bin/python openpyxl
 ```
 
-> OpenAlex API 无需注册，每秒最多 10 次请求，脚本已内置限速。
+> OpenAlex API 的匿名请求每秒最多 10 次；使用免费 API key 时可继续游标翻页并提高限额。脚本不会打印 key。
 
 ---
 

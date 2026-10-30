@@ -9,10 +9,12 @@ OpenAlex 外文学术文献检索脚本
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.request
 import urllib.parse
+from urllib.error import HTTPError
 from datetime import date
 from pathlib import Path
 from collections import Counter
@@ -142,8 +144,12 @@ def decode_abstract(inverted_index):
 
 
 def openalex_get(endpoint, params, retries=5):
-    """带重试的 OpenAlex API 请求（无需 API key）"""
-    query_string = urllib.parse.urlencode(params)
+    """带重试的 OpenAlex API 请求；设置 OPENALEX_API_KEY 后支持游标翻页。"""
+    request_params = dict(params)
+    api_key = os.environ.get("OPENALEX_API_KEY")
+    if api_key:
+        request_params["api_key"] = api_key
+    query_string = urllib.parse.urlencode(request_params)
     url = f"https://api.openalex.org/{endpoint}?{query_string}"
 
     for attempt in range(retries):
@@ -154,11 +160,12 @@ def openalex_get(endpoint, params, retries=5):
                 return json.loads(resp.read().decode())
         except Exception as e:
             wait = 2.0 * (attempt + 1)
+            detail = f"HTTP {e.code}" if isinstance(e, HTTPError) else type(e).__name__
             if attempt < retries - 1:
-                print(f"  [!] 请求失败（{e}），{wait:.1f}s 后重试...")
+                print(f"  [!] 请求失败（{detail}），{wait:.1f}s 后重试...")
                 time.sleep(wait)
             else:
-                print(f"  [✗] 请求最终失败: {url[:80]}")
+                print(f"  [✗] 请求最终失败: {url.split('?', 1)[0]}")
                 return None
 
 
@@ -280,6 +287,7 @@ def search_openalex(keyword_groups, max_results=100,
     # 主检索：对每个主组同义词分别检索，合并结果
     primary_map = {}
     total_ref = 0
+    page_failed = False
     for syn in primary_synonyms:
         query = f'"{syn}"' if " " in syn else syn
         params = {
@@ -298,6 +306,7 @@ def search_openalex(keyword_groups, max_results=100,
             params["cursor"] = cursor
             data = openalex_get("works", params)
             if not data:
+                page_failed = True
                 break
             items = data.get("results", [])
             meta = data.get("meta", {})
@@ -307,12 +316,20 @@ def search_openalex(keyword_groups, max_results=100,
                 if pid and pid not in primary_map:
                     primary_map[pid] = item
             fetched += len(items)
+            if not filter_groups and len(primary_map) >= max_results:
+                break
             next_cursor = meta.get("next_cursor")
             if not next_cursor or len(items) < 200 or fetched >= 1000:
                 break
             cursor = next_cursor
             time.sleep(0.12)
         time.sleep(0.15)
+
+    if page_failed:
+        raise RuntimeError(
+            "主检索分页请求失败，未保存不完整结果；"
+            "游标翻到后续页需要设置 OPENALEX_API_KEY"
+        )
 
     print(f"  主检索合并: {len(primary_map)} 篇")
 
@@ -561,13 +578,17 @@ def main():
     soc_filter = not args.no_soc_filter
 
     # 执行检索
-    papers, count = search_openalex(
-        keyword_groups,
-        max_results=args.max_results,
-        social_science_filter=soc_filter,
-        year_from=args.year_from,
-        year_to=args.year_to,
-    )
+    try:
+        papers, count = search_openalex(
+            keyword_groups,
+            max_results=args.max_results,
+            social_science_filter=soc_filter,
+            year_from=args.year_from,
+            year_to=args.year_to,
+        )
+    except RuntimeError as exc:
+        print(f"\n[✗] 检索中止：{exc}")
+        return 1
 
     print(f"\n[✓] 检索完成，获取 {len(papers)} 篇")
 
@@ -613,4 +634,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
